@@ -130,6 +130,13 @@ SUPPORTED_PROFILES = {
         "data-format": "NCHW",
         "model-name": "ssd-mobilenet",
     },
+    "ssd-mobilenet-dldtruntime": {
+        "dataset": "coco-300",
+        "outputs": "DetectionOutput",
+        "backend": "dldt",
+        "data-format": "NCHW",
+        "model-name": "ssd-mobilenet",
+    },
 
     # ssd-resnet34
     "ssd-resnet34-tf": {
@@ -252,6 +259,9 @@ def get_backend(backend):
     elif backend == "openvino":
         from backend_ov import BackendOpenVino
         backend = BackendOpenVino()
+    elif backend == "dldt":
+        from backend_dldt import BackendDldt
+        backend = BackendDldt()
     else:
         raise ValueError("unknown backend: " + backend)
     return backend
