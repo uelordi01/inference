@@ -123,6 +123,13 @@ SUPPORTED_PROFILES = {
         "data-format": "NHWC",
         "model-name": "ssd-mobilenet",
     },
+    "ssd-mobilenet-openvinoruntime": {
+        "dataset": "coco-300",
+        "outputs": "DetectionOutput",
+        "backend": "openvino",
+        "data-format": "NCHW",
+        "model-name": "ssd-mobilenet",
+    },
 
     # ssd-resnet34
     "ssd-resnet34-tf": {
@@ -242,6 +249,9 @@ def get_backend(backend):
     elif backend == "tflite":
         from backend_tflite import BackendTflite
         backend = BackendTflite()
+    elif backend == "openvino":
+        from backend_ov import BackendOpenVino
+        backend = BackendOpenVino()
     else:
         raise ValueError("unknown backend: " + backend)
     return backend
@@ -283,7 +293,9 @@ class RunnerBase:
         processed_results = []
         try:
             results = self.model.predict({self.model.inputs[0]: qitem.img})
-            processed_results = self.post_process(results, qitem.content_id, qitem.label, self.result_dict)
+            processed_results = self.post_process(results, qitem.content_id,
+                                                  qitem.label,
+                                                  self.result_dict)
             if self.take_accuracy:
                 self.post_process.add_results(processed_results)
                 self.result_timing.append(time.time() - qitem.start)
@@ -296,7 +308,8 @@ class RunnerBase:
             response_array_refs = []
             response = []
             for idx, query_id in enumerate(qitem.query_id):
-                response_array = array.array("B", np.array(processed_results[idx], np.float32).tobytes())
+                response_array = array.array("B", np.array(processed_results[idx],
+                                                           np.float32).tobytes())
                 response_array_refs.append(response_array)
                 bi = response_array.buffer_info()
                 response.append(lg.QuerySampleResponse(query_id, bi[0], bi[1]))
