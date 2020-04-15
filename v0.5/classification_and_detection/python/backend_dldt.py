@@ -43,9 +43,22 @@ class BackendDldt(backend.Backend):
         if self.det_net == None:
             print("error the model is not loaded")
         self.__out_names = self.det_net.getUnconnectedOutLayersNames()
+        if inputs:
+           self.inputs = inputs
+        else:
+            print("inputs have to be defined in the script parameter")
+        #     self.inputs = []
+        #     for key in self.net.inputs:
+        #         self.inputs.append(key)
         layerNames = self.det_net.getLayerNames()
         print("loading dldt finished")
         self.outputs = layerNames
+        if outputs:
+            self.outputs = outputs
+        else:
+            for key in self.net.outputs:
+                self.outputs.append(key)
+
         # TODO define the inputs correclty pelase
         return self
     def postProcessingMobileNET(self, res):
@@ -61,7 +74,7 @@ class BackendDldt(backend.Backend):
             detection_num = 0
             detection_classes = []
             detection_threshold = []
-            for number, proposal in enumerate(dnn_tuple[0][0]):
+            for number, proposal in enumerate(dnn_tuple[0][0][0]):
                 if proposal[2] > 0:
                     detection_classes.append(np.int(proposal[1]))
                     detection_num = detection_num + 1
@@ -90,26 +103,16 @@ class BackendDldt(backend.Backend):
 
     def predict(self, feed):
         # TODO put the input correctly
-        # yield to give
-        feed_image_size = len(feed)
-        input_key_found = self.check_input(feed)
         feed_length = len(feed[self.inputs[0]])
-        result = None
-
-        for i in range (0, feed_length):
-            self.net_plugin.start_async(request_id=i, inputs={
-                                        self.inputs[0]:feed[self.inputs[0]][i]
-                                                       })
-        return_statement = []
         result_list = []
-        for i in range(0, feed_length):
-            self.net_plugin.requests[i].wait(-1)
-            res = self.net_plugin.requests[i].outputs[self.outputs[0]]
-            result_list.append(res)
-        result = self.postProcessingMobileNET(result_list)
-        #x = np.reshape(result, (1, 4)).T
 
-        #return_statement.append(x)
+        for i in range(0, feed_length):
+             input_shape = None
+             input_shape = feed[self.inputs[0]][i].reshape(1, 3, 300, 300)
+             self.det_net.setInput(input_shape, self.inputs[0])
+             outs = self.det_net.forward(self.__out_names)
+             result_list.append(outs)
+        result = self.postProcessingMobileNET(result_list)
         return result
 
 
