@@ -144,9 +144,7 @@ class BackendOpenVino(backend.Backend):
         result = None
 
         for i in range (0, feed_length):
-            self.net_plugin.start_async(request_id=i, inputs={
-                                        self.inputs[0]:feed[self.inputs[0]][i]
-                                                       })
+            self.net_plugin.start_async(request_id=i, inputs={self.inputs[0]:feed[self.inputs[0]][i]})
         return_statement = []
         result_list = []
         for i in range(0, feed_length):
